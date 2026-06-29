@@ -22,31 +22,6 @@
 <meta name="description"         content="특금법 · 시행령 · 업무규정을 한 화면에서 동시 검색·비교하는 AML/CFT 법령 전문 플랫폼">
 <meta name="keywords"            content="AML, CFT, 특금법, 자금세탁방지, 법령비교, 고객확인, KYC, STR">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getStorage, ref as sref, uploadBytesResumable, getDownloadURL, deleteObject }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-import { getDatabase, ref as dbref, set, push, onValue, remove, serverTimestamp }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-
-const CFG = {
-  apiKey:"AIzaSyC3aBpGOcb8i6r7say3hVhvPAaq6tTOEes",
-  authDomain:"aml-master.firebaseapp.com", projectId:"aml-master",
-  databaseURL:"https://aml-master-default-rtdb.asia-southeast1.firebasedatabase.app",
-  storageBucket:"aml-master.firebasestorage.app",
-  messagingSenderId:"699859711756", appId:"1:699859711756:web:d486be8f40234775e07b29"
-};
-const app = initializeApp(CFG);
-window._FB = {
-  auth: getAuth(app), storage: getStorage(app), database: getDatabase(app),
-  signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged,
-  sref, uploadBytesResumable, getDownloadURL, deleteObject,
-  dbref, set, push, onValue, remove, serverTimestamp
-};
-window.dispatchEvent(new Event('fb-ready'));
-</script>
 <style>
 :root{
   --ink:#0f1117;--ink2:#1a1b26;--navy:#1a4fa0;
@@ -105,8 +80,8 @@ html,body{height:100%;overflow:hidden;font-family:'Noto Sans KR',sans-serif;back
 .radio-item label{font-size:12px;color:#444;cursor:pointer;}
 
 /* ── APP ── */
-#app{display:none;flex-direction:column;height:100%;}
-#app.on{display:flex;}
+#app{display:flex;flex-direction:column;height:100%;}
+#app{display:flex;}
 
 /* ── HEADER ── */
 #hdr{height:46px;background:var(--ink);border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0;z-index:100;}
@@ -303,123 +278,6 @@ html,body{height:100%;overflow:hidden;font-family:'Noto Sans KR',sans-serif;back
 </head>
 <body>
 
-<!-- ══ LOGIN ══ -->
-<div id="lov">
-  <div class="lcard">
-    <div class="lhead">
-      <div class="lbadge">AML</div>
-      <h1>AML LEX</h1>
-      <p>법령 3단 비교 뷰어</p>
-    </div>
-    <div class="lbody">
-      <div class="ltabs">
-        <button class="ltab on" id="tab-li" onclick="switchTab('li')">로그인</button>
-        <button class="ltab"    id="tab-su" onclick="switchTab('su')">회원가입</button>
-      </div>
-      <div class="lsec on" id="sec-li">
-        <label class="lbl">이메일</label>
-        <input class="finp" id="li-em" type="email" placeholder="admin@example.com" autocomplete="email">
-        <label class="lbl">비밀번호</label>
-        <input class="finp" id="li-pw" type="password" placeholder="••••••••" autocomplete="current-password">
-        <div class="lerr" id="li-err">⚠ 이메일 또는 비밀번호를 확인해주세요</div>
-        <button class="lbtn" id="li-btn" onclick="doLogin()">로그인</button>
-      </div>
-      <div class="lsec" id="sec-su">
-        <!-- 단계 표시바 -->
-        <div class="step-bar">
-          <div class="step-bar-item on"  id="sbar1">① 기본정보</div>
-          <div class="step-bar-item"     id="sbar2">② 업무정보</div>
-          <div class="step-bar-item"     id="sbar3">③ 계정생성</div>
-        </div>
-
-        <!-- STEP 1: 기본정보 -->
-        <div class="su-step on" id="su-step1">
-          <label class="slbl">성함 *</label>
-          <input class="finp" id="su-name" type="text" placeholder="홍길동" style="margin-bottom:10px;">
-          <label class="slbl">이메일 (로그인 아이디로 사용됩니다) *</label>
-          <input class="finp" id="su-em" type="email" placeholder="name@example.com" autocomplete="email" style="margin-bottom:10px;">
-          <label class="slbl">소속 (회사명/기관명) *</label>
-          <input class="finp" id="su-org" type="text" placeholder="○○은행 / ○○증권" style="margin-bottom:10px;">
-          <label class="slbl">현재 AML 관련 업무를 수행 중이신가요? *</label>
-          <div class="radio-group" id="su-aml-yn">
-            <div class="radio-item"><input type="radio" name="aml_yn" id="aml-y" value="네"><label for="aml-y">네</label></div>
-            <div class="radio-item"><input type="radio" name="aml_yn" id="aml-n" value="아니오"><label for="aml-n">아니오</label></div>
-          </div>
-          <div class="lerr" id="su-err1"></div>
-          <button class="su-next" onclick="suNext(1)">다음 →</button>
-        </div>
-
-        <!-- STEP 2: 업무정보 -->
-        <div class="su-step" id="su-step2">
-          <label class="slbl">세부 역할 *</label>
-          <select class="ssel" id="su-role">
-            <option value="">선택해주세요</option>
-            <option>고객확인 업무</option>
-            <option>의심거래보고(STR)</option>
-            <option>AML 운영 / 기획</option>
-            <option>검사 / 감사</option>
-            <option>해당없음</option>
-            <option>기타</option>
-          </select>
-          <label class="slbl">업무에서 가장 큰 고민이나 해결하고 싶은 점</label>
-          <textarea class="stxt" id="su-concern" placeholder="자유롭게 작성해 주세요"></textarea>
-          <label class="slbl">관심 있게 보신 프로젝트</label>
-          <input class="finp" id="su-project" type="text" placeholder="예: AML-LEX, STR 분석 도구 등" style="margin-bottom:10px;">
-          <label class="slbl">한국자금세탁방지연구회(KASG) 인지도 *</label>
-          <select class="ssel" id="su-kasg">
-            <option value="">선택해주세요</option>
-            <option>잘 알고 있음</option>
-            <option>이름만 들어봄</option>
-            <option>처음 들어봄</option>
-          </select>
-          <label class="slbl">기타 건의사항</label>
-          <textarea class="stxt" id="su-etc" placeholder="자유롭게 적어주세요"></textarea>
-          <div class="lerr" id="su-err2"></div>
-          <div class="su-nav">
-            <button class="su-back" onclick="suBack(2)">← 이전</button>
-            <button class="su-next" onclick="suNext(2)">다음 →</button>
-          </div>
-        </div>
-
-        <!-- STEP 3: 계정생성 -->
-        <div class="su-step" id="su-step3">
-          <!-- 아이디 확인 표시 -->
-          <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:4px;padding:10px 12px;margin-bottom:12px;">
-            <div style="font-size:10px;color:#6b7fad;font-family:'JetBrains Mono',monospace;margin-bottom:3px;">로그인 아이디 (이메일)</div>
-            <div id="su-em-display" style="font-size:13px;font-weight:700;color:#1a4fa0;"></div>
-          </div>
-          <label class="slbl">비밀번호 (6자 이상) *</label>
-          <input class="finp" id="su-pw" type="password" placeholder="••••••••" autocomplete="new-password" style="margin-bottom:10px;">
-          <label class="slbl">비밀번호 확인 *</label>
-          <input class="finp" id="su-pw2" type="password" placeholder="••••••••" autocomplete="new-password" style="margin-bottom:10px;">
-          <!-- 개인정보 동의 (개인정보 보호법 준수) -->
-          <div class="schk-wrap">
-            <input type="checkbox" id="su-agree">
-            <label for="su-agree">
-              <strong>개인정보 수집·이용에 동의합니다 (필수)</strong><br>
-              <span style="color:#888;font-size:10.5px;">
-                · 수집항목: 성명, 이메일, 소속, 업무 관련 정보<br>
-                · 이용목적: 서비스 제공, 신규 프로젝트 기획·안내<br>
-                · 보유기간: 회원 탈퇴 또는 파기 요청 시까지<br>
-              </span>
-              <a href="./privacy.html" target="_blank"
-                style="font-size:10.5px;color:var(--navy);text-decoration:underline;">
-                개인정보처리방침 전문 보기 →
-              </a>
-            </label>
-          </div>
-          <div class="lerr" id="su-err"></div>
-          <div class="lok"  id="su-ok">✅ 가입 완료! 잠시 후 로그인 화면으로 이동합니다.</div>
-          <div class="su-nav">
-            <button class="su-back" onclick="suBack(3)">← 이전</button>
-            <button class="lbtn" id="su-btn" onclick="doSignup()" style="flex:1;">🎉 가입 완료</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ══ APP ══ -->
 <div id="app">
 
@@ -445,10 +303,7 @@ html,body{height:100%;overflow:hidden;font-family:'Noto Sans KR',sans-serif;back
     <span class="chip" onclick="qs('가상자산')">가상자산</span>
   </div>
   <div id="ua">
-    <span id="ue"></span>
-    <button class="hbtn admin-btn" id="adm-btn" style="display:none" onclick="openAdm()">⚙ 관리자</button>
     <button class="hbtn" id="memo-fab" onclick="toggleMemo()">📝 메모</button>
-    <button class="hbtn" style="border-color:rgba(200,55,45,.3)" onclick="doLogout()">로그아웃</button>
   </div>
 </div>
 
@@ -477,7 +332,7 @@ html,body{height:100%;overflow:hidden;font-family:'Noto Sans KR',sans-serif;back
 </div>
 
 <!-- STATUSBAR -->
-<div id="sbar"><span id="sg">로그인 후 PDF를 불러오세요</span></div>
+<div id="sbar"><span id="sg">PDF를 불러오는 중...</span></div>
 <div id="app-footer" style="height:22px;background:#050508;border-top:1px solid rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;gap:16px;flex-shrink:0;">
   <a href="./privacy.html" target="_blank" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(255,255,255,.2);text-decoration:none;transition:.15s;" onmouseover="this.style.color='#b8860b'" onmouseout="this.style.color='rgba(255,255,255,.2)'">개인정보처리방침</a>
   <span style="color:rgba(255,255,255,.08);font-size:9px;">|</span>
@@ -510,57 +365,6 @@ html,body{height:100%;overflow:hidden;font-family:'Noto Sans KR',sans-serif;back
   </div>
 </div>
 
-<!-- ══ 관리자 패널 ══ -->
-<div id="adm-panel">
-  <div id="adm-inner">
-    <div id="adm-bar">
-      <h2>⚙ 관리자 패널</h2>
-      <button class="adm-close" onclick="closeAdm()">✕ 닫기</button>
-    </div>
-    <div id="adm-body">
-
-      <!-- 섹션1: PDF 추가 방법 안내 -->
-      <div class="adm-sec">
-        <div class="adm-sec-title">📂 PDF 추가 방법 <span class="adm-sec-badge">GitHub</span></div>
-        <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:2;font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.03);border-radius:4px;padding:14px;">
-          <strong style="color:var(--gold);">PDF는 GitHub에서 관리됩니다 (무료)</strong><br><br>
-          1. GitHub 레포의 <span style="color:var(--gold);">pdfs/</span> 폴더에<br>
-          &nbsp;&nbsp;&nbsp;PDF 파일을 업로드<br>
-          2. <span style="color:var(--gold);">aml-lex-viewer.html</span>의<br>
-          &nbsp;&nbsp;&nbsp;<span style="color:#7eb3ff;">PDF_FILES</span> 배열에 파일명 추가<br>
-          3. 커밋하면 Vercel 자동 배포<br><br>
-          <span style="color:rgba(255,255,255,.3);">※ Firebase Storage 요금 없이 무료 운영</span>
-        </div>
-      </div>
-
-      <!-- 섹션2: 파일 목록 -->
-      <div class="adm-sec">
-        <div class="adm-sec-title">📋 업로드된 파일 <span class="adm-sec-badge" id="adm-file-cnt">0개</span></div>
-        <div id="adm-file-list"><div style="font-size:11px;color:rgba(255,255,255,.25);text-align:center;padding:16px;">파일이 없습니다</div></div>
-      </div>
-
-      <!-- 섹션3: 패널 구성 -->
-      <div class="adm-sec">
-        <div class="adm-sec-title">⚙ 패널 구성 <span class="adm-sec-badge">화면 배치</span></div>
-        <div style="font-size:11px;color:rgba(255,255,255,.35);margin-bottom:12px;">각 패널의 제목과 표시할 PDF 파일을 설정하세요</div>
-        <div id="adm-panel-rows"></div>
-        <button class="adm-apply" onclick="applyPanelCfg()">✅ 패널 구성 적용하기</button>
-      </div>
-
-      <!-- 섹션4: 관리자 등록 안내 -->
-      <div class="adm-sec">
-        <div class="adm-sec-title">🔑 관리자 추가 방법</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.4);line-height:2;font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.03);border-radius:4px;padding:12px;">
-          Firebase 콘솔 → Realtime Database → 데이터<br>
-          <span style="color:var(--gold);">admins/</span> 노드에 추가:<br>
-          <span style="color:rgba(255,255,255,.6);">"admins": { "user1": "이메일@example.com" }</span>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 <!-- ══ 메모 팝업 ══ -->
 <div id="memo-popup">
   <div class="mp-head" id="mp-drag">
@@ -588,7 +392,7 @@ function escKw(kw){return kw.replace(/[-.*+?^${}()|[\]\\]/g,'\\$&');}
 // 상태
 const S={
   panels:[], all:[], cur:-1, kw:'', sync:false, syncing:false, nid:0,
-  files:[], uid:null, isAdmin:false
+  files:[]
 };
 
 const DEFS=[
@@ -597,67 +401,12 @@ const DEFS=[
   {lbl:'03',title:'자금세탁방지 업무규정',icon:'📙'},
 ];
 
-const ADMINS=['korbono@kakao.com']; // 기본 관리자
-
-/* ══ Firebase ══ */
-window.addEventListener('fb-ready',()=>{
-  const {auth,onAuthStateChanged}=window._FB;
-  onAuthStateChanged(auth,user=>{
-    if(user){
-      S.uid=user.uid;
-      document.getElementById('lov').style.display='none';
-      document.getElementById('ue').textContent=user.email;
-      checkAdmin(user.email);
-      showApp();
-    }else{
-      S.uid=null; S.isAdmin=false;
-      document.getElementById('lov').style.display='flex';
-      document.getElementById('app').classList.remove('on');
-    }
-  });
-});
-
-function showApp(){
-  document.getElementById('app').classList.add('on');
+/* ══ 앱 시작 (로그인 없이 바로) ══ */
+window.addEventListener('DOMContentLoaded',()=>{
   if(!S.panels.length){addPanel();addPanel();addPanel();}
   listenFiles();
   loadMemo();
-  listenHistory();
-}
-
-function checkAdmin(email){
-  // 소문자로 정규화해서 비교
-  const emailLower = email.toLowerCase().trim();
-  const adminList  = ADMINS.map(e => e.toLowerCase().trim());
-
-  // 기본값: ADMINS 배열로 즉시 판단
-  S.isAdmin = adminList.includes(emailLower);
-  applyAdminUI();
-
-  // Firebase DB 추가 관리자 확인
-  const {database,dbref,onValue}=window._FB;
-  onValue(dbref(database,'admins/admins'), snap=>{
-    const data = snap.val() || {};
-    const dbList = Object.values(data).map(e => String(e).toLowerCase().trim());
-    S.isAdmin = adminList.includes(emailLower) || dbList.includes(emailLower);
-    applyAdminUI();
-  }, {onlyOnce:true});
-}
-
-function applyAdminUI(){
-  // 관리자 버튼 표시
-  const btn=document.getElementById('adm-btn');
-  if(btn) btn.style.display=S.isAdmin?'flex':'none';
-  // 패널의 업로드 버튼 표시
-  document.querySelectorAll('.adm-only').forEach(el=>{
-    el.style.display=S.isAdmin?'':'none';
-  });
-  // 패널 툴바의 업로드 버튼 (동적 생성된 것)
-  S.panels.forEach(p=>{
-    const ub=document.getElementById(`UB${p.id}`);
-    if(ub) ub.style.display=S.isAdmin?'':'none';
-  });
-}
+});
 
 /* ══ 파일 목록 (GitHub pdfs 폴더 기준) ══ */
 // PDF는 GitHub 레포의 pdfs/ 폴더에 직접 업로드합니다.
@@ -714,8 +463,6 @@ function addPanel(){
       <span class="pbadge" id="PB${pid}">0건</span>
       <select class="fsel" id="FS${pid}" onchange="onSel(${pid},this)"><option value="">— PDF 선택 —</option></select>
       <button class="tbtn" onclick="openPdfModal(${pid})">⛶ 확대</button>
-      <button class="tbtn adm-only" id="UB${pid}" style="display:${S.isAdmin?'':'none'}" onclick="document.getElementById('FI${pid}').click()">📂 업로드</button>
-      <input type="file" accept=".pdf" id="FI${pid}" style="display:none" onchange="onFile(${pid},this)">
     </div>
     <div class="uprow" id="UP${pid}"><div class="uptrack"><div class="upfill" id="UF${pid}"></div></div><div class="uptxt" id="UT${pid}"></div></div>
     <div class="pbody" id="PY${pid}" onscroll="onScroll(${pid})">
@@ -757,23 +504,9 @@ async function loadFromUrl(pid,url,name){
   }
 }
 
-function openFile(pid){const fi=document.getElementById(`FI${pid}`);if(fi)fi.click();}
-
-async function onFile(pid,inp){
-  const file=inp.files[0];if(!file)return;
-  setTitle(pid,file.name.replace(/\.pdf$/i,'').replace(/_/g,' '));
-  renderPDF(pid,await file.arrayBuffer());
-  uploadFile(pid,file);
-}
-
 function dov(e,pid){e.preventDefault();document.getElementById(`DZ${pid}`).classList.add('ov');}
 function dlv(e,pid){document.getElementById(`DZ${pid}`).classList.remove('ov');}
-function drp(e,pid){e.preventDefault();dlv(e,pid);const f=e.dataTransfer.files[0];if(f?.type==='application/pdf')onFile(pid,{files:[f]});}
-
-async function uploadFile(pid,file){
-  // GitHub 방식: 로컬에서 미리보기만, 업로드는 GitHub에 직접
-  showToast('💡 로컬 미리보기 — 영구 저장은 GitHub pdfs 폴더에 업로드하세요');
-}
+function drp(e,pid){e.preventDefault();dlv(e,pid);}
 
 /* ══ PDF 렌더링 ══ */
 async function renderPDF(pid,ab){
@@ -1102,104 +835,23 @@ function closePdfModal(){
   document.getElementById('pm-canvas-wrap').innerHTML='';
 }
 
-/* ══ 관리자 패널 ══ */
-function openAdm(){
-  document.getElementById('adm-panel').classList.add('open');
-  renderAdmFileList();renderAdmPanelRows();
-}
-function closeAdm(){document.getElementById('adm-panel').classList.remove('open');}
+/* ══ 관리자 패널 (제거됨 - GitHub 방식) ══ */
+function renderAdmFileList(){}
+function renderAdmPanelRows(){}
 
-function renderAdmFileList(){
-  const list=document.getElementById('adm-file-list');
-  const cnt=document.getElementById('adm-file-cnt');
-  cnt.textContent=S.files.length+'개';
-  if(!S.files.length){list.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.25);text-align:center;padding:16px;">업로드된 파일이 없습니다</div>';return;}
-  list.innerHTML='';
-  S.files.forEach(f=>{
-    const row=document.createElement('div');row.className='adm-file-row';
-    const sizeStr=f.size>0?(f.size/1024).toFixed(0)+'KB':'';
-    row.innerHTML=`<span class="adm-file-name">📄 ${f.name}</span><span class="adm-file-size">${sizeStr}</span>`;
-    const delBtn=document.createElement('button');delBtn.className='adm-del-btn';delBtn.textContent='🗑 삭제';
-    delBtn.addEventListener('click',()=>deleteFile(f.key,f.name));
-    row.appendChild(delBtn);list.appendChild(row);
-  });
-}
-
-async function deleteFile(key,name){
-  if(!confirm(`"${name}" 파일을 삭제하시겠습니까?`))return;
-  try{
-    const {database,dbref,remove,storage,sref,deleteObject}=window._FB;
-    await remove(dbref(database,`pdfs/${key}`));
-    try{await deleteObject(sref(storage,`pdfs/${name}`));}catch(e){console.warn('Storage 삭제 실패:',e.message);}
-    showToast('🗑 삭제 완료');
-  }catch(e){showToast('❌ 삭제 실패: '+e.message);}
-}
-
-function renderAdmPanelRows(){
-  const wrap=document.getElementById('adm-panel-rows');wrap.innerHTML='';
-  S.panels.forEach((panel,i)=>{
-    const def=DEFS[i]||{lbl:String(i+1).padStart(2,'0')};
-    const row=document.createElement('div');row.className='adm-panel-row';
-    const lbl=document.createElement('span');lbl.className='adm-lbl';lbl.textContent=def.lbl;
-    const titleInp=document.createElement('input');titleInp.className='adm-title-inp';titleInp.id=`apt-${panel.id}`;titleInp.value=panel.title;titleInp.placeholder='패널 제목';
-    const fileSel=document.createElement('select');fileSel.className='adm-file-sel';fileSel.id=`apf-${panel.id}`;
-    fileSel.innerHTML='<option value="">— 파일 선택 —</option>'+S.files.map(f=>`<option value="${f.url}">${f.name.replace(/\.pdf$/i,'')}</option>`).join('');
-    row.appendChild(lbl);row.appendChild(titleInp);row.appendChild(fileSel);
-    wrap.appendChild(row);
-  });
-}
-
-function applyPanelCfg(){
-  S.panels.forEach(panel=>{
-    const titleInp=document.getElementById(`apt-${panel.id}`);
-    const fileSel=document.getElementById(`apf-${panel.id}`);
-    if(!titleInp||!fileSel)return;
-    const newTitle=titleInp.value.trim();
-    const fileUrl=fileSel.value;
-    const fileName=fileSel.options[fileSel.selectedIndex]?.text||'';
-    if(newTitle)setTitle(panel.id,newTitle);
-    if(fileUrl)loadFromUrl(panel.id,fileUrl,fileName);
-  });
-  closeAdm();showToast('✅ 패널 구성 적용됨');
-}
-
-/* 관리자 파일 업로드 */
-function admDov(e){e.preventDefault();document.getElementById('adm-drop').classList.add('ov');}
-function admDlv(e){document.getElementById('adm-drop').classList.remove('ov');}
-function admDrp(e){e.preventDefault();admDlv(e);admUpload(e.dataTransfer.files);}
-
-async function admUpload(files){
-  // GitHub 방식에서는 웹 업로드 대신 GitHub에 직접 업로드
-  showToast('📌 GitHub pdfs 폴더에 직접 업로드하세요');
-  alert(
-    'PDF 추가/변경 방법 (GitHub 방식)\n\n' +
-    '1. GitHub 레포의 pdfs/ 폴더에 PDF 파일을 업로드합니다.\n' +
-    '2. aml-lex-viewer.html 파일의 PDF_FILES 배열에\n' +
-    '   파일명을 추가합니다.\n\n' +
-    '예시:\n' +
-    'const PDF_FILES = [\n' +
-    '  \'특정금융정보법.pdf\',\n' +
-    '  \'시행령.pdf\',\n' +
-    '  \'업무규정.pdf\',\n' +
-    '];\n\n' +
-    '3. GitHub에 커밋하면 Vercel이 자동 배포합니다.'
-  );
-}
-
-/* ══ 검색 기록 ══ */
+/* ══ 검색 기록 (localStorage) ══ */
 function saveHistory(kw){
-  if(!S.uid||!kw)return;
-  const {database,dbref,push,serverTimestamp}=window._FB;
-  push(dbref(database,`history/${S.uid}`),{kw,ts:serverTimestamp()});
+  if(!kw)return;
+  let hist=JSON.parse(localStorage.getItem('amllex_history')||'[]');
+  hist=hist.filter(h=>h.kw!==kw); // 중복 제거
+  hist.unshift({kw,ts:Date.now()});
+  hist=hist.slice(0,50);
+  localStorage.setItem('amllex_history',JSON.stringify(hist));
+  renderHistory(hist);
 }
 function listenHistory(){
-  if(!S.uid)return;
-  const {database,dbref,onValue}=window._FB;
-  onValue(dbref(database,`history/${S.uid}`),snap=>{
-    const data=snap.val()||{};
-    const items=Object.entries(data).map(([k,v])=>({key:k,kw:v.kw,ts:v.ts||0})).sort((a,b)=>b.ts-a.ts).slice(0,50);
-    renderHistory(items);
-  });
+  const hist=JSON.parse(localStorage.getItem('amllex_history')||'[]');
+  renderHistory(hist);
 }
 function renderHistory(items){
   const empty=document.getElementById('hist-empty');
@@ -1215,24 +867,18 @@ function renderHistory(items){
   });
 }
 
-/* ══ 메모장 ══ */
+/* ══ 메모장 (localStorage) ══ */
 let memoTimer=null;
 function loadMemo(){
-  if(!S.uid)return;
-  const {database,dbref,onValue}=window._FB;
-  onValue(dbref(database,`memo/${S.uid}`),snap=>{
-    const d=snap.val();
-    if(d?.content!==undefined)document.getElementById('memo').value=d.content;
-  },{onlyOnce:true});
+  const saved=localStorage.getItem('amllex_memo');
+  if(saved!==null)document.getElementById('memo').value=saved;
 }
 document.getElementById('memo').addEventListener('input',()=>{
   document.getElementById('memo-st').textContent='수정 중...';
-  clearTimeout(memoTimer);memoTimer=setTimeout(saveMemo,2000);
+  clearTimeout(memoTimer);memoTimer=setTimeout(saveMemo,1500);
 });
 function saveMemo(){
-  if(!S.uid)return;
-  const {database,dbref,set}=window._FB;
-  set(dbref(database,`memo/${S.uid}`),{content:document.getElementById('memo').value,savedAt:new Date().toISOString()});
+  localStorage.setItem('amllex_memo',document.getElementById('memo').value);
   document.getElementById('memo-st').textContent='저장됨 ✓';
 }
 function clearMemo(){if(!confirm('메모를 초기화하시겠습니까?'))return;document.getElementById('memo').value='';saveMemo();}
@@ -1281,141 +927,6 @@ function fbCopy(txt,cb){
   document.body.removeChild(ta);
 }
 
-/* ══ 로그인 / 로그아웃 ══ */
-async function doLogin(){
-  const em=document.getElementById('li-em').value.trim(),pw=document.getElementById('li-pw').value;
-  const btn=document.getElementById('li-btn'),err=document.getElementById('li-err');
-  if(!em||!pw)return;btn.disabled=true;btn.textContent='로그인 중...';err.classList.remove('show');
-  try{await window._FB.signInWithEmailAndPassword(window._FB.auth,em,pw);}
-  catch{err.classList.add('show');btn.disabled=false;btn.textContent='로그인';}
-}
-/* ══ 회원가입 단계 이동 ══ */
-function suNext(step){
-  const err1=document.getElementById('su-err1');
-  const err2=document.getElementById('su-err2');
-
-  if(step===1){
-    // STEP1 검증
-    const name=document.getElementById('su-name').value.trim();
-    const em=document.getElementById('su-em').value.trim();
-    const org=document.getElementById('su-org').value.trim();
-    const amlYn=document.querySelector('input[name="aml_yn"]:checked');
-    if(!name){err1.textContent='⚠ 성함을 입력해주세요';err1.classList.add('show');return;}
-    if(!em||!em.includes('@')){err1.textContent='⚠ 올바른 이메일을 입력해주세요';err1.classList.add('show');return;}
-    if(!org){err1.textContent='⚠ 소속을 입력해주세요';err1.classList.add('show');return;}
-    if(!amlYn){err1.textContent='⚠ AML 업무 수행 여부를 선택해주세요';err1.classList.add('show');return;}
-    err1.classList.remove('show');
-    goStep(2);
-  } else if(step===2){
-    const role=document.getElementById('su-role').value;
-    const kasg=document.getElementById('su-kasg').value;
-    if(!role){err2.textContent='⚠ 세부 역할을 선택해주세요';err2.classList.add('show');return;}
-    if(!kasg){err2.textContent='⚠ KASG 인지도를 선택해주세요';err2.classList.add('show');return;}
-    err2.classList.remove('show');
-    goStep(3);
-  }
-}
-
-function suBack(step){
-  if(step===2) goStep(1);
-  if(step===3) goStep(2);
-}
-
-function goStep(n){
-  [1,2,3].forEach(i=>{
-    document.getElementById('su-step'+i).className='su-step'+(i===n?' on':'');
-    const sb=document.getElementById('sbar'+i);
-    if(i<n) sb.className='step-bar-item done';
-    else if(i===n) sb.className='step-bar-item on';
-    else sb.className='step-bar-item';
-  });
-  // STEP3 진입 시 이메일 표시
-  if(n===3){
-    const em=document.getElementById('su-em').value.trim();
-    const disp=document.getElementById('su-em-display');
-    if(disp) disp.textContent=em||'(이메일 미입력)';
-  }
-}
-
-async function doSignup(){
-  const em=document.getElementById('su-em').value.trim();
-  const pw=document.getElementById('su-pw').value;
-  const pw2=document.getElementById('su-pw2').value;
-  const agree=document.getElementById('su-agree').checked;
-  const btn=document.getElementById('su-btn');
-  const err=document.getElementById('su-err');
-  const ok=document.getElementById('su-ok');
-  err.classList.remove('show');ok.classList.remove('show');
-
-  if(!pw){err.textContent='⚠ 비밀번호를 입력해주세요';err.classList.add('show');return;}
-  if(pw.length<6){err.textContent='⚠ 비밀번호는 6자 이상';err.classList.add('show');return;}
-  if(pw!==pw2){err.textContent='⚠ 비밀번호가 일치하지 않습니다';err.classList.add('show');return;}
-  if(!agree){err.textContent='⚠ 개인정보 수집 및 이용에 동의해주세요';err.classList.add('show');return;}
-
-  btn.disabled=true;btn.textContent='가입 중...';
-
-  try{
-    // Firebase Auth 회원가입
-    await window._FB.createUserWithEmailAndPassword(window._FB.auth, em, pw);
-
-    // 설문 데이터 수집
-    const surveyData = {
-      name:    document.getElementById('su-name').value.trim(),
-      email:   em,
-      org:     document.getElementById('su-org').value.trim(),
-      amlWork: document.querySelector('input[name="aml_yn"]:checked')?.value || '',
-      role:    document.getElementById('su-role').value,
-      concern: document.getElementById('su-concern').value.trim(),
-      project: document.getElementById('su-project').value.trim(),
-      kasg:    document.getElementById('su-kasg').value,
-      etc:     document.getElementById('su-etc').value.trim(),
-      agreedAt: new Date().toISOString(),
-      registeredAt: new Date().toISOString(),
-    };
-
-    // Firebase DB에 설문 데이터 저장
-    const {database, dbref, set} = window._FB;
-    const key = em.replace(/[.@+]/g,'_');
-
-    // 1) 설문 응답 저장 (surveys/)
-    await set(dbref(database, 'surveys/' + key), surveyData);
-
-    // 2) allowedUsers에 등록 (접근 허용)
-    await set(dbref(database, 'allowedUsers/' + key), {
-      email: em,
-      name:  surveyData.name,
-      org:   surveyData.org,
-      approvedAt: new Date().toISOString(),
-    });
-
-    ok.classList.add('show');
-    // 3초 후 로그인 탭으로 이동
-    setTimeout(()=>{
-      switchTab('li');
-      document.getElementById('li-em').value=em;
-    }, 2500);
-
-  } catch(e){
-    const m={
-      'auth/email-already-in-use':'⚠ 이미 사용 중인 이메일입니다',
-      'auth/invalid-email':'⚠ 이메일 형식이 올바르지 않습니다',
-      'auth/weak-password':'⚠ 비밀번호가 너무 약합니다'
-    }[e.code] || '⚠ '+e.message;
-    err.textContent=m;err.classList.add('show');
-    btn.disabled=false;btn.textContent='🎉 가입 완료';
-  }
-}
-async function doLogout(){await window._FB.signOut(window._FB.auth);}
-function switchTab(t){
-  ['li','su'].forEach(x=>{
-    document.getElementById(`tab-${x}`).className='ltab'+(x===t?' on':'');
-    document.getElementById(`sec-${x}`).className='lsec'+(x===t?' on':'');
-  });
-  document.getElementById('li-err').classList.remove('show');
-  document.getElementById('su-err').classList.remove('show');
-  document.getElementById('su-ok').classList.remove('show');
-}
-
 /* ══ 유틸 ══ */
 function switchSTab(t){['idx','hist'].forEach(x=>{document.getElementById(`stab-${x}`).className='sb-tab'+(x===t?' on':'');document.getElementById(`ssec-${x}`).className='sb-sec'+(x===t?' on':'');});}
 function setTitle(pid,t){const p=S.panels.find(x=>x.id===pid);if(p)p.title=t;const el=document.getElementById(`PT${pid}`);if(el)el.textContent=t;}
@@ -1446,49 +957,30 @@ function rebuildSbar(){
 
 /* ══ 키보드 ══ */
 document.getElementById('si').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();if(e.key==='Escape'){document.getElementById('si').value='';clearHL();}});
-document.getElementById('li-pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-document.getElementById('su-pw2').addEventListener('keydown',e=>{if(e.key==='Enter')doSignup();});
 document.addEventListener('keydown',e=>{
   if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;
   if(e.key==='ArrowDown'||e.key==='n')go(1);
   if(e.key==='ArrowUp'||e.key==='N')go(-1);
-  if(e.key==='Escape'){closePdfModal();closeAdm();}
+  if(e.key==='Escape'){closePdfModal();}
 });
 document.getElementById('pdf-modal').addEventListener('click',e=>{if(e.target===document.getElementById('pdf-modal'))closePdfModal();});
-document.getElementById('adm-panel').addEventListener('click',e=>{if(e.target===document.getElementById('adm-panel'))closeAdm();});
 document.addEventListener('dragover',e=>e.preventDefault());
 document.addEventListener('drop',e=>e.preventDefault());
 
 // ── HTML onclick에서 호출 가능하도록 window에 전역 노출 ──
-window.doLogin       = doLogin;
-window.doLogout      = doLogout;
-window.doSignup      = doSignup;
 window.doSearch      = doSearch;
-window.switchTab     = switchTab;
 window.switchSTab    = switchSTab;
-window.suNext        = suNext;
-window.suBack        = suBack;
 window.toggleSync    = toggleSync;
 window.toggleMemo    = toggleMemo;
-window.openAdm       = openAdm;
-window.closeAdm      = closeAdm;
 window.openPdfModal  = openPdfModal;
 window.closePdfModal = closePdfModal;
 window.changeZoom    = changeZoom;
-window.applyPanelCfg = applyPanelCfg;
-window.admUpload     = admUpload;
-window.admDov        = admDov;
-window.admDlv        = admDlv;
-window.admDrp        = admDrp;
-window.deleteFile    = deleteFile;
 window.copyMemo      = copyMemo;
 window.saveMemo      = saveMemo;
 window.clearMemo     = clearMemo;
 window.go            = go;
 window.qs            = qs;
 window.onSel         = onSel;
-window.onFile        = onFile;
-window.openFile      = openFile;
 window.dov           = dov;
 window.dlv           = dlv;
 window.drp           = drp;
